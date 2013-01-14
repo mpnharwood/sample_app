@@ -23,6 +23,13 @@ describe "Authentication" do
 			end
 		end
 
+		describe "when not signed in" do
+			it {should_not have_link('Profile')}
+			it {should_not have_link('Settings')}
+			it {should_not have_link('Users')}
+			it {should_not have_link('Sign out')}
+		end
+
 		describe "with valid information" do
 			let(:user) {FactoryGirl.create(:user)}
 			before { sign_in user}
@@ -39,6 +46,7 @@ describe "Authentication" do
 			end
 		end
 	end
+
 	describe "authorization" do
 		describe "for non-signed-in users" do
 			let(:user) {FactoryGirl.create(:user)}
@@ -52,6 +60,18 @@ describe "Authentication" do
 				describe "after signing in" do
 					it "should render the desired protected page" do
 						page.should have_title('Edit user')
+					end
+					describe "when signing in again" do
+						before do
+							delete signout_path
+							visit signin_path
+							fill_in "Email",    with: user.email
+							fill_in "Password", with: user.password
+							click_button "Sign in"
+						end
+						it "should render the default (profile) page" do
+							page.should have_title(user.name)
+						end
 					end
 				end
 			end
@@ -92,6 +112,15 @@ describe "Authentication" do
 				specify {response.should redirect_to(root_path)}
 			end
 		end
+		describe "as an admin user" do
+			let(:admin) { FactoryGirl.create(:admin) }
+			before {sign_in admin}
+			describe "submitting a delete request on an admin account" do
+				before {delete user_path(admin)}
+				specify {response.should redirect_to(root_path)}
+			end
+		end
+
 	end
 
 end
